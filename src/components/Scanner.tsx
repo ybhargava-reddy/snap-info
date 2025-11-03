@@ -40,20 +40,51 @@ export const Scanner = () => {
   };
 
   const captureImage = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current) {
+      toast.error('Video not ready');
+      return;
+    }
+
+    const video = videoRef.current;
+    
+    // Check if video is ready
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+      toast.error('Please wait for camera to fully load');
+      return;
+    }
+
+    // Verify video has valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast.error('Camera not ready, please try again');
+      return;
+    }
 
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0);
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      setCapturedImage(imageData);
-      stopCamera();
-      analyzeImage(imageData);
+    if (!ctx) {
+      toast.error('Failed to create canvas context');
+      return;
     }
+
+    // Draw the video frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get the image data
+    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Validate the image data
+    if (imageData === 'data:,' || imageData.length < 100) {
+      toast.error('Failed to capture image, please try again');
+      return;
+    }
+
+    console.log('Image captured successfully, size:', imageData.length);
+    setCapturedImage(imageData);
+    stopCamera();
+    analyzeImage(imageData);
   };
 
   const analyzeImage = async (imageData: string) => {

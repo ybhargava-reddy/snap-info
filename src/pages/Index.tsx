@@ -9,16 +9,29 @@ import Footer from '@/components/Footer';
 const Index = () => {
   useEffect(() => {
     // Add smooth scrolling for anchor links
-    const links = document.querySelectorAll('a[href^="#"]');
-    links.forEach(link => {
-      link.addEventListener('click', (e) => {
+    const handleAnchorClick = (e: Event) => {
+      const link = e.currentTarget as HTMLAnchorElement;
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
         e.preventDefault();
-        const target = document.querySelector(link.getAttribute('href'));
+        const targetId = href.substring(1);
+        const target = document.getElementById(targetId);
         if (target) {
           target.scrollIntoView({ behavior: 'smooth' });
         }
-      });
+      }
+    };
+
+    const links = document.querySelectorAll('a[href^="#"]');
+    links.forEach(link => {
+      link.addEventListener('click', handleAnchorClick);
     });
+
+    return () => {
+      links.forEach(link => {
+        link.removeEventListener('click', handleAnchorClick);
+      });
+    };
   }, []);
 
   return (
