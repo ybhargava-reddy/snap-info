@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, X, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,10 +13,19 @@ export const Scanner = () => {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startCamera = async () => {
     try {
       setIsVideoReady(false);
+      
+      // Check if camera is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error('Camera not supported in this browser or context');
+        return;
+      }
+
+      console.log('Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
@@ -26,6 +35,7 @@ export const Scanner = () => {
         audio: false
       });
       
+      console.log('Camera access granted');
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
@@ -37,9 +47,15 @@ export const Scanner = () => {
         };
       }
       setIsScanning(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing camera:', error);
-      toast.error('Unable to access camera. Please check permissions.');
+      if (error.name === 'NotAllowedError') {
+        toast.error('Camera access denied. Please allow camera permissions and try again.');
+      } else if (error.name === 'NotFoundError') {
+        toast.error('No camera found on this device.');
+      } else {
+        toast.error('Unable to access camera. Try uploading an image instead.');
+      }
     }
   };
 
@@ -116,6 +132,24 @@ export const Scanner = () => {
     setAnalysis('');
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageData = e.target?.result as string;
+      setCapturedImage(imageData);
+      analyzeImage(imageData);
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     return () => {
       stopCamera();
@@ -173,12 +207,29 @@ export const Scanner = () => {
             )}
           </div>
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
             {!isScanning && !capturedImage && (
-              <Button onClick={startCamera} size="lg" variant="hero">
-                <Camera className="mr-2" />
-                Start Camera
-              </Button>
+              <>
+                <Button onClick={startCamera} size="lg" variant="hero">
+                  <Camera className="mr-2" />
+                  Start Camera
+                </Button>
+                <Button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  size="lg" 
+                  variant="accent"
+                >
+                  <Upload className="mr-2" />
+                  Upload Image
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </>
             )}
 
             {isScanning && (
