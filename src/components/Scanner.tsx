@@ -10,19 +10,31 @@ export const Scanner = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const startCamera = async () => {
     try {
+      setIsVideoReady(false);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false
       });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        
+        // Wait for video to be ready
+        videoRef.current.onloadeddata = () => {
+          console.log('Video loaded and ready');
+          setIsVideoReady(true);
+        };
       }
       setIsScanning(true);
     } catch (error) {
@@ -36,29 +48,20 @@ export const Scanner = () => {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.onloadeddata = null;
+    }
     setIsScanning(false);
+    setIsVideoReady(false);
   };
 
   const captureImage = () => {
-    if (!videoRef.current) {
-      toast.error('Video not ready');
+    if (!videoRef.current || !isVideoReady) {
+      toast.error('Please wait for camera to be ready');
       return;
     }
 
     const video = videoRef.current;
-    
-    // Check if video is ready
-    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-      toast.error('Please wait for camera to fully load');
-      return;
-    }
-
-    // Verify video has valid dimensions
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      toast.error('Camera not ready, please try again');
-      return;
-    }
-
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -143,12 +146,22 @@ export const Scanner = () => {
             )}
 
             {isScanning && (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                {!isVideoReady && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <div className="text-center">
+                      <Loader2 className="w-12 h-12 mx-auto mb-2 text-primary animate-spin" />
+                      <p className="text-white">Loading camera...</p>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {capturedImage && (
@@ -170,8 +183,13 @@ export const Scanner = () => {
 
             {isScanning && (
               <>
-                <Button onClick={captureImage} size="lg" variant="hero">
-                  Capture & Analyze
+                <Button 
+                  onClick={captureImage} 
+                  size="lg" 
+                  variant="hero"
+                  disabled={!isVideoReady}
+                >
+                  {isVideoReady ? 'Capture & Analyze' : 'Waiting for camera...'}
                 </Button>
                 <Button onClick={stopCamera} size="lg" variant="outline">
                   <X className="mr-2" />
