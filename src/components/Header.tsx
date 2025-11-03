@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import infoSnapLogo from '@/assets/infosnap-logo.png';
 
 const Header = () => {
@@ -18,13 +19,16 @@ const Header = () => {
         </div>
         
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#features" className="text-foreground/80 hover:text-foreground transition-smooth">
+          <a href="/#features" className="text-foreground/80 hover:text-foreground transition-smooth">
             Features
           </a>
-          <a href="#how-it-works" className="text-foreground/80 hover:text-foreground transition-smooth">
+          <a href="/#how-it-works" className="text-foreground/80 hover:text-foreground transition-smooth">
             How It Works
           </a>
-          <a href="#download" className="text-foreground/80 hover:text-foreground transition-smooth">
+          <Link to="/scanner" className="text-foreground/80 hover:text-foreground transition-smooth">
+            Web Scanner
+          </Link>
+          <a href="/#download" className="text-foreground/80 hover:text-foreground transition-smooth">
             Download
           </a>
         </nav>
