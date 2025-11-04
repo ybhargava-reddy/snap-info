@@ -111,17 +111,27 @@ export const Scanner = () => {
     setAnalysis('');
 
     try {
+      console.log('Starting image analysis...');
       const { data, error } = await supabase.functions.invoke('analyze-image', {
         body: { imageBase64: imageData }
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.analysis) {
+        throw new Error('No analysis data returned');
+      }
 
       setAnalysis(data.analysis);
       toast.success('Analysis complete!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image. Please try again.');
+      toast.error(error?.message || 'Failed to analyze image. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
