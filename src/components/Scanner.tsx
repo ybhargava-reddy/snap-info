@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, X, Loader2, Upload } from 'lucide-react';
+import { Camera, X, Loader2, Upload, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export const Scanner = () => {
+  const navigate = useNavigate();
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string>('');
@@ -169,6 +171,18 @@ export const Scanner = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80 pt-20 pb-12 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button 
+            onClick={() => navigate('/')} 
+            variant="ghost" 
+            size="sm"
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+        </div>
+        
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-primary">
             Web Scanner
