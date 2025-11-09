@@ -39,14 +39,23 @@ export const Scanner = () => {
       
       console.log('Camera access granted');
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
+        const video = videoRef.current;
         
-        // Wait for video to be ready
-        videoRef.current.onloadeddata = () => {
-          console.log('Video loaded and ready');
-          setIsVideoReady(true);
+        // Set event handler BEFORE setting srcObject
+        video.onloadedmetadata = async () => {
+          console.log('Video metadata loaded');
+          try {
+            await video.play();
+            console.log('Video playing');
+            setIsVideoReady(true);
+          } catch (playError) {
+            console.error('Error playing video:', playError);
+            setIsVideoReady(true); // Still set ready even if autoplay fails
+          }
         };
+        
+        video.srcObject = stream;
+        streamRef.current = stream;
       }
       setIsScanning(true);
     } catch (error: any) {
@@ -67,7 +76,8 @@ export const Scanner = () => {
       streamRef.current = null;
     }
     if (videoRef.current) {
-      videoRef.current.onloadeddata = null;
+      videoRef.current.onloadedmetadata = null;
+      videoRef.current.srcObject = null;
     }
     setIsScanning(false);
     setIsVideoReady(false);
