@@ -42,7 +42,21 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Analyze this image in detail. Identify what it is (object, place, person, animal, etc.), provide comprehensive information about it including key characteristics, interesting facts, historical context if applicable, and any other relevant details. Be thorough and informative.'
+                text: `You are an AI-powered Live Educational Scanner. Analyze the image and provide accurate, age-appropriate educational insights.
+
+For every scan, structure your response with:
+
+**Object/Place Identification** – What is it?
+
+**Category/Subject** – (e.g., Biology, Geography, History, Physics, Literature, etc.)
+
+**Educational Explanation** – A clear, informative description suitable for students.
+
+**Fun Fact or Related Concept** – Add an interesting fact or related topic to encourage curiosity.
+
+**Suggested Learning Activity** – A simple idea for hands-on exploration or research.
+
+Be engaging, educational, and encourage curiosity.`
               },
               {
                 type: 'image_url',
