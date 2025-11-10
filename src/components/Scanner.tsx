@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, X, Loader2, Upload, ArrowLeft } from 'lucide-react';
+import { Camera, X, Loader2, Upload, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,8 @@ export const Scanner = () => {
   const [analysis, setAnalysis] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +154,59 @@ export const Scanner = () => {
   const reset = () => {
     setCapturedImage(null);
     setAnalysis('');
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlayingAudio(false);
+  };
+
+  const readAloud = async () => {
+    if (!analysis) return;
+
+    try {
+      setIsPlayingAudio(true);
+
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text: analysis }
+      });
+
+      if (error) throw error;
+
+      if (data.audioContent) {
+        // Stop any currently playing audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+
+        // Create new audio element
+        const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+        };
+
+        audio.onerror = () => {
+          setIsPlayingAudio(false);
+          toast.error('Failed to play audio');
+        };
+
+        await audio.play();
+      }
+    } catch (error: any) {
+      console.error('Error reading aloud:', error);
+      setIsPlayingAudio(false);
+      toast.error(error?.message || 'Failed to generate speech');
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlayingAudio(false);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,7 +357,30 @@ export const Scanner = () => {
 
         {analysis && !isAnalyzing && (
           <Card className="glass p-6 animate-fade-in">
-            <h2 className="text-2xl font-bold mb-4 text-primary">Analysis Results</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-primary">Analysis Results</h2>
+              {!isPlayingAudio ? (
+                <Button
+                  onClick={readAloud}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Volume2 className="h-4 w-4" />
+                  Read Aloud
+                </Button>
+              ) : (
+                <Button
+                  onClick={stopAudio}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <VolumeX className="h-4 w-4" />
+                  Stop
+                </Button>
+              )}
+            </div>
             <div className="prose prose-invert max-w-none">
               <p className="text-foreground whitespace-pre-wrap">{analysis}</p>
             </div>
